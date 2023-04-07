@@ -2,13 +2,13 @@ import discord
 import openai
 from typing import Iterable
 
-from helpbot.bot.base import OpenAIResponseBot
+from helpbot.bot.base import OpenAIReactBot
 
 
 __all__ = ['DiscordBot']
 
 
-class DiscordBot(OpenAIResponseBot):
+class DiscordBot(OpenAIReactBot):
     def __init__(self, config: dict):
         super().__init__(config)
 
@@ -25,7 +25,7 @@ class DiscordBot(OpenAIResponseBot):
             if not self._response_allowed(message):
                 return
             response = await self.get_response(message)
-            await self.send_message(response, message.channel)
+            await self.send_message(response, self.get_context(message))
 
     def _response_allowed(self, message: discord.Message) -> bool:
         # If the message is from the bot itself, ignore
@@ -43,33 +43,29 @@ class DiscordBot(OpenAIResponseBot):
         # Otherwise, ignore
         return False
     
-    async def get_message_history(self, channel: discord.TextChannel) -> Iterable[dict]:
+    async def get_message_history(self, context: dict) -> Iterable[dict]:
         "Instead of using the message history, we'll use the Discord API."
+        channel = context['channel']
         messages = sorted([x async for x in channel.history(limit=5)], key=lambda m: m.created_at)
+        # Let's only include recent messages from the user. The bot gets confused when it sees its own replies
         return [{
-            'role': 'user' if m.author != self.client.user else 'assistant',
+            'role': 'user',
             'content': m.content
-        } for m in messages]
-
-    async def get_response(self, message: str) -> str:
-        # Use the system prompt and the last 5 messages to generate a response
-        messages = [{'role': 'system', 'content': self.get_system_prompt()}] + await self.get_message_history(message.channel)
-        response = openai.ChatCompletion.create(
-            model='gpt-3.5-turbo',
-            messages=messages,
-            temperature=0.9,
-            max_tokens=150,
-        )
-        return response.choices[0]['message']['content']
+        } for m in messages if m.author != self.client.user]
+    
+    def get_context(self, message):
+        context = super().get_context(message)
+        return {**context, 'channel': message.channel}
 
 
     async def on_message(self, message: discord.Message) -> None:
         async with message.channel.typing():
-            response = self.get_response(message.content)
-            self.send_message(response, message.channel)
+            response = await self.get_response(message.content)
+            await self.send_message(response, self.get_context(message))
 
-    async def send_message(self, message, channel) -> None:
-        await channel.send(message)
+    async def send_message(self, message, context: dict) -> None:
+        if message != '':
+            await context['channel'].send(message)
 
     def run(self) -> None:
         self.client.run(self.config['discord_token'])

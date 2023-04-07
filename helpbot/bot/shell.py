@@ -1,18 +1,18 @@
-from helpbot.bot.base import OpenAIResponseBot
+from helpbot.bot.base import OpenAIReactBot
 
 
 __all__ = ['ShellBot']
 
 
-class ShellBot(OpenAIResponseBot):
-    def respond(self, message):
+class ShellBot(OpenAIReactBot):
+    async def respond(self, message):
         print(message)
 
-    def send_message(self, message: str):
-        super().send_message(message)
+    async def send_message(self, message: str, context: dict = {}):
+        await super().send_message(message)
         print(message)
 
-    def run(self):
+    async def run(self):
         while True:
             message = input(">>> ")
-            self.on_message(message)
+            await self.on_message(message)
