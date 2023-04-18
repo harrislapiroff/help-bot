@@ -2,7 +2,7 @@ import discord
 import openai
 from typing import Iterable
 
-from helpbot.bot.base import OpenAIReactBot
+from helpbot.bot.openai import OpenAIReactBot
 
 
 __all__ = ['DiscordBot']

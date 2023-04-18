@@ -1,4 +1,4 @@
-from helpbot.bot.base import OpenAIReactBot
+from helpbot.bot.openai import OpenAIReactBot
 
 
 __all__ = ['ShellBot']
