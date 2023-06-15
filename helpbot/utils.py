@@ -1,3 +1,5 @@
+import json
+
 import tiktoken
 
 from typing import Iterable
@@ -15,3 +17,7 @@ def count_message_tokens(messages: Iterable[dict], model) -> int:
                 num_tokens += -1  # role is always required and always 1 token
     num_tokens += 2  # every reply is primed with <im_start>assistant
     return num_tokens
+
+
+def json_single_line(json_: dict) -> str:
+    return json.dumps(json_, separators=(', ', ': '))

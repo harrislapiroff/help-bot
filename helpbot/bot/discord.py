@@ -1,11 +1,14 @@
 import discord
 import openai
-from typing import Iterable
+import logging
+from typing import Iterable, Any
 
 from helpbot.bot.openai import OpenAIReactBot
 
 
 __all__ = ['DiscordBot']
+
+logging.basicConfig(level=logging.INFO)
 
 
 class DiscordBot(OpenAIReactBot):
@@ -24,10 +27,11 @@ class DiscordBot(OpenAIReactBot):
         async def on_message(message) -> None:
             if not self._response_allowed(message):
                 return
-            response = await self.get_response(message)
-            await self.send_message(response, self.get_context(message))
+            await self.get_response(message.content, extra_context=message)
 
     def _response_allowed(self, message: discord.Message) -> bool:
+        logging.info(f'Saw message from {message.author} in {message.channel} with content: {message.content}')
+
         # If the message is from the bot itself, ignore
         if message.author == self.client.user:
             return False
@@ -43,19 +47,16 @@ class DiscordBot(OpenAIReactBot):
         # Otherwise, ignore
         return False
     
-    async def get_message_history(self, context: dict) -> Iterable[dict]:
-        "Instead of using the message history, we'll use the Discord API."
-        channel = context['channel']
-        messages = sorted([x async for x in channel.history(limit=5)], key=lambda m: m.created_at)
-        # Let's only include recent messages from the user. The bot gets confused when it sees its own replies
-        return [{
-            'role': 'user',
-            'content': m.content
-        } for m in messages if m.author != self.client.user]
-    
-    def get_context(self, message):
-        context = super().get_context(message)
-        return {**context, 'channel': message.channel}
+    def get_context(self, extra_context: Any):
+        context = super().get_context(extra_context)
+        return {**context, 'channel': extra_context.channel}
+
+
+    def get_system_prompt(self, extra_context: Any):
+        context = self.get_context(extra_context)
+        return super().get_system_prompt(context) + (
+            f'You are talking in the {context["channel"]} channel on Discord\n'
+        )
 
 
     async def on_message(self, message: discord.Message) -> None:

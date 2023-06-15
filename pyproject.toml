@@ -12,6 +12,7 @@ httpx = "^0.23.3"
 wikipedia = "^1.4.0"
 discord-py = "^2.2.2"
 tiktoken = "^0.3.3"
+numexpr = "^2.8.4"
 
 [tool.poetry.scripts]
 shell = "helpbot.scripts.shell:main"
