@@ -189,13 +189,11 @@ class OpenAIReactBot(AbstractBot):
         return {}
 
     async def get_response(self, message: str, extra_context : Optional[Any] = {}) -> str:
-        # Use the system prompt and the last 5 messages to generate a response
         messages = [
             {'role': 'system', 'content': self.get_system_prompt(extra_context)},
             {'role': 'user', 'content': message},
         ]
 
-        # We also send messages to keep the user updated on what the bot is doing
         i = 0
         while i < self.MAX_TRIES:
             i += 1
