@@ -11,6 +11,23 @@ __all__ = ['DiscordBot']
 logging.basicConfig(level=logging.INFO)
 
 
+# Function to split messages that are above the Discord's message limit
+def split_message(text: str):
+    chunks = []
+    while len(text) > 2000:
+        index = text.rfind(". ", 0, 2000)
+        if index == -1:
+            index = 2000
+        newline_index = text.rfind("\n", 0, index)
+        if newline_index != -1:
+            index = newline_index
+        chunks.append(text[:index+1])
+        text = text[index+1:]
+    chunks.append(text)
+    return chunks
+
+
+
 class DiscordBot(OpenAIReactBot):
     def __init__(self, config: dict):
         super().__init__(config)
@@ -66,7 +83,13 @@ class DiscordBot(OpenAIReactBot):
 
     async def send_message(self, message, context: dict) -> None:
         if message != '':
-            await context['channel'].send(message)
+            if len(message) > 2000:
+                messages = split_message(message)
+            else:
+                messages = [message]
+
+            for message in messages:
+                await context['channel'].send(message)
 
     def run(self) -> None:
         self.client.run(self.config['discord_token'])
